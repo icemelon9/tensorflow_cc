@@ -1,0 +1,12 @@
+# Package Information for pkg-config
+
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+includedir=${prefix}/include
+libdir=${exec_prefix}/lib
+
+Name: TensorFlow
+Description: TensorFlow C++ Library
+Version: @TENSORFLOW_VERSION@
+Cflags: -I${includedir}/tensorflow -I${includedir}/tensorflow/bazel-genfiles -I${includedir}/tensorflow/tensorflow/contrib/makefile/downloads -I${includedir}/tensorflow/tensorflow/contrib/makefile/downloads/eigen -I${includedir}/tensorflow/tensorflow/contrib/makefile/downloads/gemmlowp -I${includedir}/tensorflow/tensorflow/contrib/makefile/gen/protobuf-host/include
+Libs: -L${libdir}/tensorflow_cc -rdynamic -ltensorflow_cc -ldl -lpthread -Wl,-rpath,${libdir}/tensorflow_cc

@@ -7,18 +7,23 @@ project(
 # Static library with no GPU support is built by default.
 # Use the following option to build a shared library with GPU support.
 # If enabled, bazel has to be installed.
-option(TENSORFLOW_SHARED "Build shared library (required for GPU support)." OFF)
-option(TENSORFLOW_STATIC "Build static library." ON)
+option(TENSORFLOW_SHARED "Build shared library (required for GPU support)." ON)
+option(TENSORFLOW_STATIC "Build static library." OFF)
 
 # -------------
 # CMake Options
 # -------------
+
+set(TENSORFLOW_VERSION "1.2.1" CACHE STRING "TensorFlow version")
+set(CUDA_PATH "/usr/local/cuda" CACHE PATH "CUDA install path")
+set(CUDNN_PATH "/usr/local/cuda" CACHE PATH "CUDNN install path")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
 include(CMakePackageConfigHelpers)
 set(CMAKECFG_INSTALL_DIR lib/cmake/TensorflowCC)
+set(PKGCONFIG_INSTALL_DIR lib/pkgconfig)
 
 # --------------------------------------------------------
 # Include External Projects for Shared / Static Tensorflow
@@ -47,7 +52,7 @@ if(TENSORFLOW_SHARED)
   add_library(tensorflow_cc_shared INTERFACE)
   target_compile_options(
     tensorflow_cc_shared INTERFACE
-    "-std=c++1z"
+    "-std=c++11"
   )
   add_dependencies(
     tensorflow_cc_shared
@@ -60,13 +65,13 @@ if(TENSORFLOW_SHARED)
     "${CMAKE_INSTALL_PREFIX}/include/tensorflow/tensorflow/contrib/makefile/downloads"
     "${CMAKE_INSTALL_PREFIX}/include/tensorflow/tensorflow/contrib/makefile/downloads/eigen"
     "${CMAKE_INSTALL_PREFIX}/include/tensorflow/tensorflow/contrib/makefile/downloads/gemmlowp"
-    "${CMAKE_INSTALL_PREFIX}/include/tensorflow/tensorflow/contrib/makefile/gen/protobuf-host/include"
+    #"${CMAKE_INSTALL_PREFIX}/include/tensorflow/tensorflow/contrib/makefile/gen/protobuf-host/include"
   )
   target_link_libraries(
     tensorflow_cc_shared INTERFACE
     "${CMAKE_INSTALL_PREFIX}/lib/tensorflow_cc/libtensorflow_cc.so"
     # static protobuf is used from the contrib/makefile
-    "${CMAKE_INSTALL_PREFIX}/lib/tensorflow_cc/libprotobuf.a"
+    #"${CMAKE_INSTALL_PREFIX}/lib/tensorflow_cc/libprotobuf.a"
     dl pthread
   )
 endif()
@@ -122,6 +127,12 @@ configure_package_config_file(
   NO_SET_AND_CHECK_MACRO # TensorflowCC only uses interface libraries
   NO_CHECK_REQUIRED_COMPONENTS_MACRO # TensorflowCC does not have components
 )
+if(TENSORFLOW_SHARED)
+  configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/tensorflow.pc.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/tensorflow.pc" @ONLY)
+endif()
+
 
 # -------
 # Install
@@ -144,10 +155,10 @@ install(
   DESTINATION include/tensorflow/third_party
 )
 # install static libprotobuf from contrib/makefile
-install(
-  FILES "${CMAKE_CURRENT_BINARY_DIR}/tensorflow/tensorflow/contrib/makefile/gen/protobuf-host/lib/libprotobuf.a"
-  DESTINATION lib/tensorflow_cc
-)
+# install(
+#   FILES "${CMAKE_CURRENT_BINARY_DIR}/tensorflow/tensorflow/contrib/makefile/gen/protobuf-host/lib/libprotobuf.a"
+#   DESTINATION lib/tensorflow_cc
+# )
 # shared library specific
 if(TENSORFLOW_SHARED)
   install(
@@ -180,6 +191,10 @@ if(TENSORFLOW_SHARED)
     FILE TensorflowCCSharedTargets.cmake
     NAMESPACE TensorflowCC::
     DESTINATION "${CMAKECFG_INSTALL_DIR}"
+  )
+  install(
+    FILES "${CMAKE_CURRENT_BINARY_DIR}/tensorflow.pc"
+    DESTINATION "${PKGCONFIG_INSTALL_DIR}"
   )
 endif()
 if(TENSORFLOW_STATIC)
